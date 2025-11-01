@@ -60,3 +60,695 @@ git add .
 git commit -m "Initial commit: lerna-vite-repo"
 gh auth login   # run if not authenticated
 gh repo create manishkenguva37/lerna-vite-repo --public --source=. --remote=origin --push
+cp -r temp-source/artiqui temp-source/book_priest lerna-vite-monorepo/packages/
+
+
+cd /workspaces/codespaces-blank
+git clone https://github.com/manishkenguva37/ALLBOOKPRIESTREPOOOFORLERNAMONOREPO.git temp-source
+
+
+cp -r temp-source/artiqui temp-source/book_priest lerna-vite-monorepo/packages/
+
+🧩 WHY THIS HAPPENED
+
+When you copied folders (artiqui, book_priest) that were independent Git repos (from Bitbucket or another repo),
+they came with hidden .git folders inside.
+Git interpreted those as submodules, which broke visibility on GitHub and caused the pathspec is in submodule errors.
+
+So our goal is:
+
+🧹 Remove all submodule references
+
+🚫 Ensure no .git folders remain inside subdirectories
+
+📦 Re-add them as normal folders
+
+✅ Commit and push cleanly
+
+⚙️ CLEANUP + RESTORE GUIDE
+1️⃣ Go to your main repo
+cd /workspaces/codespaces-blank/lerna-vite-monorepo
+
+2️⃣ Remove all submodule traces
+# Remove submodule definitions
+git rm -f packages/artiqui || true
+git rm -f packages/book_priest || true
+
+# Delete leftover metadata
+rm -rf .git/modules/packages
+rm -f .gitmodules
+
+3️⃣ Delete any ghost “packages” submodule entry (if it exists)
+# This ensures the folder itself isn’t a submodule
+rm -rf packages/.git
+
+4️⃣ Re-copy your real folders (clean versions)
+
+If your clean source repo is ALLBOOKPRIESTREPOOOFORLERNAMONOREPO, run:
+
+cd /workspaces/codespaces-blank
+rm -rf lerna-vite-monorepo/packages
+mkdir -p lerna-vite-monorepo/packages
+
+cp -r temp-source/artiqui temp-source/book_priest lerna-vite-monorepo/packages/
+rm -rf lerna-vite-monorepo/packages/artiqui/.git
+rm -rf lerna-vite-monorepo/packages/book_priest/.git
+
+5️⃣ Re-add them to Git
+cd lerna-vite-monorepo
+git add packages/artiqui packages/book_priest
+git commit -m "Re-added artiqui and book_priest as normal folders (fixed submodule issue)"
+git push -u origin main
+
+6️⃣ Verify they’re tracked properly
+# Should show both folders listed
+ls packages
+
+# Check what Git is tracking
+git ls-files | grep packages
+
+
+Expected output (example):
+
+packages/artiqui/package.json
+packages/book_priest/src/index.ts
+...
+
+🛡️ FUTURE-PROOF RULES
+
+Never copy a folder that already has a .git inside
+Always delete it before adding to your main repo:
+
+rm -rf foldername/.git
+
+
+Never run git submodule add unless you truly want a submodule.
+
+Double-check before commit:
+
+find . -name ".git"
+
+
+— Only the top-level .git should exist.
+
+Always test locally:
+
+git status
+git push
+gh repo view --web
+
+
+If everything looks normal, it’s safe to push.
+
+
+
+
+🧰 Step 1: Create the script file
+
+In your monorepo root (/workspaces/codespaces-blank/lerna-vite-monorepo), run:
+
+nano fix-submodules.sh
+
+🧾 Step 2: Paste this script inside
+#!/bin/bash
+set -e
+
+echo "🧹 Cleaning up any broken Git submodules..."
+
+# Ensure we are in a git repo
+if [ ! -d ".git" ]; then
+  echo "❌ Not inside a Git repository. Please run this in your monorepo root."
+  exit 1
+fi
+
+# Step 1: Remove submodule metadata
+echo "🗑️  Removing old submodule references..."
+git rm -f packages/artiqui 2>/dev/null || true
+git rm -f packages/book_priest 2>/dev/null || true
+rm -rf .git/modules/packages
+rm -f .gitmodules
+
+# Step 2: Ensure no leftover git folders
+echo "🧩 Removing any nested .git folders..."
+find packages -type d -name ".git" -exec rm -rf {} +
+
+# Step 3: Optional restore from backup repo
+if [ -d "../temp-source" ]; then
+  echo "📦 Copying folders from backup repo (../temp-source)..."
+  mkdir -p packages
+  cp -r ../temp-source/artiqui ../temp-source/book_priest packages/ 2>/dev/null || true
+  rm -rf packages/artiqui/.git packages/book_priest/.git
+fi
+
+# Step 4: Re-add clean folders
+echo "✅ Adding clean packages back to git..."
+git add -f packages/artiqui packages/book_priest 2>/dev/null || true
+
+if git diff --cached --quiet; then
+  echo "⚠️  Nothing new to commit. Skipping commit."
+else
+  git commit -m "🧩 Fixed and re-added artiqui + book_priest as normal folders"
+fi
+
+# Step 5: Push changes
+echo "🚀 Pushing to remote..."
+git push -u origin main || true
+
+# Step 6: Verification
+echo "🔍 Verifying..."
+echo "Tracked package files:"
+git ls-files | grep packages || echo "⚠️  No package files found. Check folder paths."
+
+echo "✅ Done! Submodules removed, folders restored cleanly."
+
+🧩 Step 3: Make it executable
+chmod +x fix-submodules.sh
+
+🚀 Step 4: Run it anytime you face submodule issues
+./fix-submodules.sh
+
+
+It will:
+
+remove .gitmodules
+
+delete .git/modules metadata
+
+clean nested .git folders
+
+re-copy backup folders (if you have ../temp-source)
+
+re-add and commit to Git
+
+push automatically
+
+🧠 Pro Tip
+
+If you want this script available globally:
+
+cp fix-submodules.sh ~/bin/fix-submodules
+chmod +x ~/bin/fix-submodules
+
+
+Then just run:
+
+fix-submodules
+
+
+from any repo.
+
+Would you like me to modify the script so it automatically detects and fixes all submodules (not just artiqui and book_priest)?
+
+
+Perfect 🔥 — here’s your final universal version of the script.
+
+This version works for any monorepo and automatically detects and fixes all submodules or nested .git folders — not just artiqui and book_priest.
+
+🧰 Step 1: Create the script
+
+In your monorepo root, run:
+
+nano fix-all-submodules.sh
+
+🧾 Step 2: Paste this inside
+#!/bin/bash
+set -e
+
+echo "🧹 Starting full Git submodule cleanup and restoration..."
+
+# Ensure we’re inside a Git repo
+if [ ! -d ".git" ]; then
+  echo "❌ Not inside a Git repository. Please run this in the repo root."
+  exit 1
+fi
+
+# --- STEP 1: Detect and list submodules ---
+echo "🔍 Detecting submodules..."
+SUBMODULES=$(git submodule | awk '{print $2}' || true)
+
+if [ -z "$SUBMODULES" ]; then
+  echo "✅ No registered submodules found in .gitmodules."
+else
+  echo "🗑️  Removing submodule entries..."
+  for sm in $SUBMODULES; do
+    echo "➡️  Removing submodule: $sm"
+    git rm -f "$sm" 2>/dev/null || true
+    rm -rf ".git/modules/$sm" || true
+  done
+  rm -f .gitmodules
+fi
+
+# --- STEP 2: Detect any nested .git folders ---
+echo "🔍 Searching for nested .git folders..."
+NESTED_GITS=$(find . -type d -name ".git" -not -path "./.git" || true)
+
+if [ -n "$NESTED_GITS" ]; then
+  echo "🧩 Removing nested .git folders..."
+  for g in $NESTED_GITS; do
+    echo "➡️  Removing $g"
+    rm -rf "$g"
+  done
+else
+  echo "✅ No nested .git folders found."
+fi
+
+# --- STEP 3: Re-add cleaned folders ---
+echo "📦 Re-adding cleaned project folders..."
+# Find all directories under packages/ (or similar)
+if [ -d "packages" ]; then
+  PACKAGES=$(find packages -mindepth 1 -maxdepth 1 -type d || true)
+  if [ -n "$PACKAGES" ]; then
+    for pkg in $PACKAGES; do
+      echo "➡️  Adding package: $pkg"
+      git add -f "$pkg" || true
+    done
+  else
+    echo "⚠️  No package folders found inside 'packages/'."
+  fi
+fi
+
+# --- STEP 4: Commit if changes exist ---
+if git diff --cached --quiet; then
+  echo "⚠️  No new changes to commit."
+else
+  git commit -m "🧩 Fixed and re-added all submodules as regular folders"
+fi
+
+# --- STEP 5: Push ---
+echo "🚀 Pushing to remote..."
+git push -u origin main || true
+
+# --- STEP 6: Verify ---
+echo "🔍 Final check:"
+git ls-files | grep packages || echo "⚠️  No package files tracked."
+
+echo ""
+echo "✅ Done! All submodules cleaned and restored as normal directories."
+
+🧩 Step 3: Make it executable
+chmod +x fix-all-submodules.sh
+
+🚀 Step 4: Run it anytime you want
+
+From your repo root:
+
+./fix-all-submodules.sh
+
+💡 What it does:
+
+✅ Detects all submodules automatically
+✅ Deletes .gitmodules and .git/modules/* safely
+✅ Removes nested .git folders (often hidden from old Bitbucket/Git clones)
+✅ Re-adds everything as normal tracked folders
+✅ Commits and pushes the clean state
+✅ Works for all packages inside packages/*
+
+
+ChatGPT can make mistakes.
+
+
+
+Perfect 💪 — here’s your final upgraded version of the fix script.
+It not only cleans up all submodules and .git folders,
+but also automatically restores your missing packages (artiqui, book_priest, etc.)
+from your backup repo ALLBOOKPRIESTREPOOOFORLERNAMONOREPO if they’re gone.
+
+🧰 Step 1: Create or overwrite the script
+In your monorepo root (e.g. lerna-vite-monorepo’s parent folder), run:
+nano fix-and-restore-all.sh
+
+
+🧾 Step 2: Paste this inside
+#!/bin/bash
+set -e
+
+BACKUP_REPO_URL="https://github.com/manishkenguva37/ALLBOOKPRIESTREPOOOFORLERNAMONOREPO.git"
+TEMP_CLONE_DIR="__temp_backup_restore__"
+TARGET_DIR="lerna-vite-monorepo"
+PACKAGES_DIR="$TARGET_DIR/packages"
+
+echo "🚀 Starting full monorepo submodule fix and restore process..."
+
+# --- Step 1: Verify we're in the right place ---
+if [ ! -d "$TARGET_DIR/.git" ]; then
+  echo "❌ ERROR: '$TARGET_DIR' is not a valid Git repo directory."
+  echo "Please run this from the parent folder containing your monorepo."
+  exit 1
+fi
+
+cd "$TARGET_DIR"
+
+# --- Step 2: Remove old submodule configuration ---
+echo "🧹 Cleaning up submodules and .git metadata..."
+
+git submodule deinit -f --all 2>/dev/null || true
+rm -rf .git/modules/*
+rm -f .gitmodules
+
+# --- Step 3: Delete any nested .git folders ---
+echo "🔍 Searching for nested .git folders..."
+NESTED_GITS=$(find . -type d -name ".git" -not -path "./.git" || true)
+if [ -n "$NESTED_GITS" ]; then
+  echo "🧩 Removing nested .git folders..."
+  for g in $NESTED_GITS; do
+    echo "➡️  Removing $g"
+    rm -rf "$g"
+  done
+else
+  echo "✅ No nested .git folders found."
+fi
+
+# --- Step 4: Ensure packages directory exists ---
+mkdir -p "$PACKAGES_DIR"
+
+# --- Step 5: Clone backup repo if needed ---
+echo "📦 Checking for missing packages to restore..."
+cd ..
+if [ ! -d "$TEMP_CLONE_DIR" ]; then
+  echo "🧲 Cloning backup repo..."
+  git clone "$BACKUP_REPO_URL" "$TEMP_CLONE_DIR"
+else
+  echo "🔁 Updating existing backup clone..."
+  cd "$TEMP_CLONE_DIR"
+  git pull origin main || true
+  cd ..
+fi
+
+# --- Step 6: Restore missing package folders ---
+for pkg in "artiqui" "book_priest"; do
+  if [ ! -d "$PACKAGES_DIR/$pkg" ]; then
+    echo "🆕 Restoring missing package: $pkg"
+    cp -r "$TEMP_CLONE_DIR/$pkg" "$PACKAGES_DIR/" || echo "⚠️ Skipped $pkg (not found in backup)"
+  else
+    echo "✅ $pkg already exists."
+  fi
+done
+
+cd "$TARGET_DIR"
+
+# --- Step 7: Add and commit changes ---
+echo "🧩 Re-adding all cleaned and restored folders..."
+git add -f packages/artiqui packages/book_priest || true
+
+if git diff --cached --quiet; then
+  echo "⚠️ No new changes to commit."
+else
+  git commit -m '🧩 Fixed submodules and restored artiqui & book_priest from backup'
+fi
+
+# --- Step 8: Push to GitHub ---
+echo "🚀 Pushing to origin..."
+git push -u origin main || true
+
+echo ""
+echo "✅ Done! All submodules removed and packages restored successfully."
+echo "📂 Check your folders under: $PACKAGES_DIR"
+
+
+🧩 Step 3: Make it executable
+chmod +x fix-and-restore-all.sh
+
+
+🚀 Step 4: Run it from the parent folder
+Run this command from the directory that contains your monorepo (lerna-vite-monorepo):
+./fix-and-restore-all.sh
+
+
+✅ What this script does
+
+
+Cleans all submodule references (.gitmodules, .git/modules/*)
+
+
+Deletes all nested .git folders inside packages/
+
+
+Checks if artiqui and book_priest exist
+
+
+If missing → auto-restores them from your backup repo
+
+
+Adds, commits, and pushes them as normal folders to GitHub
+
+
+
+Would you like me to modify it to automatically detect all folders from your backup repo instead of just the two (artiqui, book_priest)?
+That way, it will restore any missing folders in packages/ automatically — even if you add new ones later.
+
+
+
+ChatGPT said:
+
+Perfect 👌 — here’s the final smart version of the script.
+This version automatically detects all folders in your backup repo (ALLBOOKPRIESTREPOOOFORLERNAMONOREPO)
+and restores any that are missing inside lerna-vite-monorepo/packages.
+
+🧰 Step 1: Create the script
+
+In your parent folder (where lerna-vite-monorepo lives), run:
+
+nano fix-and-restore-smart.sh
+
+🧾 Step 2: Paste this full script
+#!/bin/bash
+set -e
+
+# === Configuration ===
+BACKUP_REPO_URL="https://github.com/manishkenguva37/ALLBOOKPRIESTREPOOOFORLERNAMONOREPO.git"
+TEMP_CLONE_DIR="__temp_backup_restore__"
+TARGET_DIR="lerna-vite-monorepo"
+PACKAGES_DIR="$TARGET_DIR/packages"
+
+echo "🚀 Starting SMART submodule cleanup + package restore process..."
+
+# --- Step 1: Verify monorepo exists ---
+if [ ! -d "$TARGET_DIR/.git" ]; then
+  echo "❌ ERROR: '$TARGET_DIR' is not a Git repository."
+  echo "Run this script from the parent folder containing '$TARGET_DIR'."
+  exit 1
+fi
+
+cd "$TARGET_DIR"
+
+# --- Step 2: Clean submodule configuration ---
+echo "🧹 Removing old submodule and Git metadata..."
+git submodule deinit -f --all 2>/dev/null || true
+rm -rf .git/modules/*
+rm -f .gitmodules
+
+# --- Step 3: Remove nested .git folders ---
+echo "🧩 Removing any nested .git directories..."
+find . -type d -name ".git" -not -path "./.git" -exec rm -rf {} + 2>/dev/null || true
+
+# --- Step 4: Ensure packages directory exists ---
+mkdir -p "$PACKAGES_DIR"
+cd ..
+
+# --- Step 5: Clone or update backup repo ---
+if [ ! -d "$TEMP_CLONE_DIR" ]; then
+  echo "🧲 Cloning backup repo from GitHub..."
+  git clone "$BACKUP_REPO_URL" "$TEMP_CLONE_DIR"
+else
+  echo "🔁 Updating existing backup clone..."
+  cd "$TEMP_CLONE_DIR"
+  git pull origin main || true
+  cd ..
+fi
+
+# --- Step 6: Detect all top-level folders in backup repo ---
+echo "🔍 Scanning backup repo for packages..."
+PACKAGE_LIST=$(find "$TEMP_CLONE_DIR" -maxdepth 1 -mindepth 1 -type d -exec basename {} \;)
+
+if [ -z "$PACKAGE_LIST" ]; then
+  echo "⚠️ No folders found in backup repo!"
+  exit 1
+fi
+
+echo "📦 Found backup packages: $PACKAGE_LIST"
+
+# --- Step 7: Restore missing packages ---
+for pkg in $PACKAGE_LIST; do
+  if [ ! -d "$PACKAGES_DIR/$pkg" ]; then
+    echo "🆕 Restoring missing package: $pkg"
+    cp -r "$TEMP_CLONE_DIR/$pkg" "$PACKAGES_DIR/"
+  else
+    echo "✅ Package already exists: $pkg"
+  fi
+done
+
+cd "$TARGET_DIR"
+
+# --- Step 8: Add and commit everything ---
+echo "🧩 Staging all restored and cleaned packages..."
+git add -f packages/* || true
+
+if git diff --cached --quiet; then
+  echo "⚠️ No new changes to commit."
+else
+  git commit -m "🧩 Cleaned submodules and restored missing packages from backup"
+fi
+
+# --- Step 9: Push to GitHub ---
+echo "🚀 Pushing changes to remote..."
+git push -u origin main || true
+
+echo ""
+echo "✅ All done!"
+echo "📂 Check your restored packages under: $PACKAGES_DIR"
+
+🧩 Step 3: Make it executable
+chmod +x fix-and-restore-smart.sh
+
+🚀 Step 4: Run it from the parent folder
+./fix-and-restore-smart.sh
+
+🧠 What this version does automatically
+
+✅ Cleans:
+
+.gitmodules
+
+.git/modules/*
+
+All nested .git folders
+
+✅ Detects:
+
+Every top-level folder in your backup repo (e.g. artiqui, book_priest, something_else)
+
+✅ Restores:
+
+Any missing packages automatically
+
+✅ Commits & pushes:
+
+Only if there are actual changes
+
+
+ChatGPT said:
+
+Perfect 👌 — here’s the final smart version of the script.
+This version automatically detects all folders in your backup repo (ALLBOOKPRIESTREPOOOFORLERNAMONOREPO)
+and restores any that are missing inside lerna-vite-monorepo/packages.
+
+🧰 Step 1: Create the script
+
+In your parent folder (where lerna-vite-monorepo lives), run:
+
+nano fix-and-restore-smart.sh
+
+🧾 Step 2: Paste this full script
+#!/bin/bash
+set -e
+
+# === Configuration ===
+BACKUP_REPO_URL="https://github.com/manishkenguva37/ALLBOOKPRIESTREPOOOFORLERNAMONOREPO.git"
+TEMP_CLONE_DIR="__temp_backup_restore__"
+TARGET_DIR="lerna-vite-monorepo"
+PACKAGES_DIR="$TARGET_DIR/packages"
+
+echo "🚀 Starting SMART submodule cleanup + package restore process..."
+
+# --- Step 1: Verify monorepo exists ---
+if [ ! -d "$TARGET_DIR/.git" ]; then
+  echo "❌ ERROR: '$TARGET_DIR' is not a Git repository."
+  echo "Run this script from the parent folder containing '$TARGET_DIR'."
+  exit 1
+fi
+
+cd "$TARGET_DIR"
+
+# --- Step 2: Clean submodule configuration ---
+echo "🧹 Removing old submodule and Git metadata..."
+git submodule deinit -f --all 2>/dev/null || true
+rm -rf .git/modules/*
+rm -f .gitmodules
+
+# --- Step 3: Remove nested .git folders ---
+echo "🧩 Removing any nested .git directories..."
+find . -type d -name ".git" -not -path "./.git" -exec rm -rf {} + 2>/dev/null || true
+
+# --- Step 4: Ensure packages directory exists ---
+mkdir -p "$PACKAGES_DIR"
+cd ..
+
+# --- Step 5: Clone or update backup repo ---
+if [ ! -d "$TEMP_CLONE_DIR" ]; then
+  echo "🧲 Cloning backup repo from GitHub..."
+  git clone "$BACKUP_REPO_URL" "$TEMP_CLONE_DIR"
+else
+  echo "🔁 Updating existing backup clone..."
+  cd "$TEMP_CLONE_DIR"
+  git pull origin main || true
+  cd ..
+fi
+
+# --- Step 6: Detect all top-level folders in backup repo ---
+echo "🔍 Scanning backup repo for packages..."
+PACKAGE_LIST=$(find "$TEMP_CLONE_DIR" -maxdepth 1 -mindepth 1 -type d -exec basename {} \;)
+
+if [ -z "$PACKAGE_LIST" ]; then
+  echo "⚠️ No folders found in backup repo!"
+  exit 1
+fi
+
+echo "📦 Found backup packages: $PACKAGE_LIST"
+
+# --- Step 7: Restore missing packages ---
+for pkg in $PACKAGE_LIST; do
+  if [ ! -d "$PACKAGES_DIR/$pkg" ]; then
+    echo "🆕 Restoring missing package: $pkg"
+    cp -r "$TEMP_CLONE_DIR/$pkg" "$PACKAGES_DIR/"
+  else
+    echo "✅ Package already exists: $pkg"
+  fi
+done
+
+cd "$TARGET_DIR"
+
+# --- Step 8: Add and commit everything ---
+echo "🧩 Staging all restored and cleaned packages..."
+git add -f packages/* || true
+
+if git diff --cached --quiet; then
+  echo "⚠️ No new changes to commit."
+else
+  git commit -m "🧩 Cleaned submodules and restored missing packages from backup"
+fi
+
+# --- Step 9: Push to GitHub ---
+echo "🚀 Pushing changes to remote..."
+git push -u origin main || true
+
+echo ""
+echo "✅ All done!"
+echo "📂 Check your restored packages under: $PACKAGES_DIR"
+
+🧩 Step 3: Make it executable
+chmod +x fix-and-restore-smart.sh
+
+🚀 Step 4: Run it from the parent folder
+./fix-and-restore-smart.sh
+
+🧠 What this version does automatically
+
+✅ Cleans:
+
+.gitmodules
+
+.git/modules/*
+
+All nested .git folders
+
+✅ Detects:
+
+Every top-level folder in your backup repo (e.g. artiqui, book_priest, something_else)
+
+✅ Restores:
+
+Any missing packages automatically
+
+✅ Commits & pushes:
+
+Only if there are actual changes
