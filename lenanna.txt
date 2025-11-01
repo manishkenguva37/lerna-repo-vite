@@ -11,6 +11,7 @@
     "build": "lerna run build"
   }
 }
+
 🧩 4. (Recommended) Fix the Import Path
 
 Instead of importing from a deep path like this:
@@ -52,3 +53,10 @@ You should see something like:
 index.js
 index.es.js
 router-engine.es.js
+
+git init
+git checkout -b main
+git add .
+git commit -m "Initial commit: lerna-vite-repo"
+gh auth login   # run if not authenticated
+gh repo create manishkenguva37/lerna-vite-repo --public --source=. --remote=origin --push
