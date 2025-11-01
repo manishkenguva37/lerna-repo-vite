@@ -1,0 +1,54 @@
+{
+  "name": "lerna-vite-monorepo",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "devDependencies": {
+    "lerna": "^9.0.0"
+  },
+  "scripts": {
+    "bootstrap": "npm install",
+    "dev": "lerna run dev --parallel",
+    "build": "lerna run build"
+  }
+}
+🧩 4. (Recommended) Fix the Import Path
+
+Instead of importing from a deep path like this:
+
+import RouterEngine from 'artiqui/dist/router-engine.es.js';
+
+
+Change it to:
+
+import RouterEngine from 'artiqui';
+
+
+and ensure your artiqui/package.json defines the entry properly:
+
+{
+  "name": "artiqui",
+  "main": "dist/index.js",
+  "module": "dist/index.es.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.es.js",
+      "require": "./dist/index.js"
+    }
+  }
+}
+
+
+That way, other packages (book-priest) can import it cleanly with just import 'artiqui'.
+
+🧩 5. Verify Build Folder Exists
+
+Make sure packages/artiqui/dist/ actually has built files:
+
+ls packages/artiqui/dist
+
+
+You should see something like:
+
+index.js
+index.es.js
+router-engine.es.js
